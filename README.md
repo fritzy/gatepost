@@ -26,7 +26,7 @@ client.connect(function () {
 });
 ```
 
-```json
+```javascript
 { name: 'Nathan Fritz',
   books:
     [ { title: 'Happy Fun Times' },
