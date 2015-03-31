@@ -11,11 +11,11 @@ var Author = new PostGate.Model({
     }}
 });
 
-Author.registerFactorySQL('getAll', "select value->>'name' AS name, (select array_agg(value->>'title') AS title from books where authors.id=(value->'author')::text::int) books from authors;");
+Author.registerFactorySQL('getAll', "select id, name, (select json_agg(row_to_json(book_r)) from (select id, title from books2 WHERE books2.author_id=authors2.id) book_r) AS books from authors2;");
 
 client.connect(function () {
     Author.getAll(function (err, authors) {
-        console.log(err);
         console.log(authors[0].toJSON());
+        client.end();
     });
 });

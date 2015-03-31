@@ -3,7 +3,7 @@
 `npm i --save postgate`
 
 ```javascript
-var PostGate = require('./');
+var PostGate = require('gatepost');
 var pg = require('pg');
 var client = new pg.Client('postgres://fritzy@localhost/fritzy');
 
@@ -20,8 +20,15 @@ Author.registerFactorySQL('getAll', "select id, name, (select json_agg(row_to_js
 
 client.connect(function () {
     Author.getAll(function (err, authors) {
-        console.log(err);
         console.log(authors[0].toJSON());
+        client.end();
     });
 });
+```
+
+```json
+{ name: 'Nathan Fritz',
+  books:
+    [ { title: 'Happy Fun Times' },
+    { title: 'Derpin with the Stars' } ] }
 ```
