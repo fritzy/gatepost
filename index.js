@@ -116,14 +116,12 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
             if (ropts.oneArg !== true) {
                 opts = typeof opts === 'object' ? opts : {};
                 if (ropts.hasOwnProperty('defaults')) {
-                    console.log("has defaults");
                     assert.equal(typeof ropts.defaults, 'object');
                     opts = lodash.defaults(opts, ropts.defaults);
                 }
             } else {
                 opts = {'arg': opts};
             }
-            console.log(ropts.sql, opts);
             this.getDB().query(ropts.sql, opts, function (err, results) {
                 var rows = [];
                 if (!err) {
