@@ -12,6 +12,6 @@
     "lodash": "^3.6.0",
     "node-postgres-named": "^2.2.0",
     "pg": "^4.3.0",
-    "verymodel": "^2.0.0"
+    "verymodel": "^2.1.0"
   }
 }
