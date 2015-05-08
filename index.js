@@ -25,7 +25,7 @@ function Model() {
         }
     });
     
-    this.registerInsert = function (ropts) {
+    this.genInsert = function (ropts) {
         assert.equal(typeof ropts, 'object');
         assert.equal(typeof ropts.table, 'string');
         assert.equal(typeof model.primary, 'string', "This model needs a primary field.");
@@ -60,11 +60,11 @@ function Model() {
         });
     };
 
-    this.registerUpdate = function (ropts) {
+    this.genUpdate = function (ropts) {
         assert.equal(typeof ropts, 'object');
         assert.equal(typeof ropts.table, 'string', "Specify a table.");
         assert.equal(typeof model.primary, 'string', "This model needs a primary field.");
-        assert.equal(typeof model.get, 'function', "This model needs a get function. Use registerGet or make your own.");
+        assert.equal(typeof model.get, 'function', util.format("This model, %n needs a get function.", model.options.name));
         this.extendModel({
             update: function (callback) {
                 var changes = this.getChanges();
@@ -107,6 +107,14 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
 
 (function () {
 
+    this.fromSQL = function (ropts) {
+        assert.equal(typeof ropts, 'object');
+        if (ropts.instance) {
+            return this.registerInstanceSQL(ropts);
+        }
+        return this.registerFactorySQL(ropts);
+    }
+
     this.registerFactorySQL = function (ropts) {
         assert.equal(typeof ropts.name, 'string');
         assert.equal(typeof ropts.sql, 'string');
@@ -140,25 +148,43 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
         }.bind(this);
     };
 
-    this.registerInstanceSQL = function (name, returnModel, sql) {
-        if (!(returnModel instanceof Model)) {
-            returnModel = model_cache[returnModel];
+    this.registerInstanceSQL = function (ropts) {
+        var model = this;
+        if (!ropts.model) {
+            ropts.model = this;
         }
+        if (typeof ropts.model === 'string') {
+            ropts.model = model_cache[ropts.model];
+        }
+        assert.equal(typeof ropts.name, 'string');
+        assert.equal(typeof ropts.sql, 'string');
         var extension = {};
-        extension[name] = function (opts, cb) {
+        extension[ropts.name] = function (opts, callback) {
             if (typeof opts === 'function') {
                 cb = opts;
                 opts = {};
             }
-            var extendedOps = lodash.extend(opts, this.toJSON());
-            this.getDB().query(sql, opts, function (err, results) {
+            var extendedOps;
+            if (ropts.asJSON) {
+                opts[model.options.name] = this.toJSON();
+                extendedOps = opts;
+            } else {
+                extendedOps = lodash.extend(opts, this.toJSON());
+            }
+            this.getDB().query(ropts.sql, extendedOps, function (err, results) {
                 var rows = [];
                 if (!err) {
                     results.rows.forEach(function (row) {
-                       rows.push(returnModel.create(row));
+                       rows.push(ropts.model.create(row));
                     }.bind(this));
                 }
-                cb(err, rows);
+                if (ropts.oneResult === true) {
+                    if (rows.length > 0) {
+                        return callback(err, rows[0]);
+                    }
+                    return callback(err, null);
+                }
+                callback(err, rows);
             }.bind(this));
         };
         this.extendModel(extension);
