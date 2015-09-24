@@ -11,8 +11,7 @@ var gatepost = require('gatepost');
 var pg = require('pg');
 var joi = require('joi');
 
-var client = new pg.Client('postgres://fritzy@localhost/fritzy');
-gatepost.registerPG(client);
+gatepost.setConnection('postgres://fritzy@localhost/fritzy');
 
 var Book = new gatepost.Model({
     id: {type: 'integer', primary: true},
@@ -120,6 +119,6 @@ __callback signature__
 
 The results are an array of model instances, or a single model if `oneResult` was set to true (null if no results).
  
-### registerPG
+### setConnection
 
- Register the `pg` postgres client with gatepost to use for queries.
+ Configure the `pg` postgres client with gatepost to use for queries. Accepts anything valid in the first parameter of [pg.connect](https://github.com/brianc/node-postgres/wiki/pg#parameters).

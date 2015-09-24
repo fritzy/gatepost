@@ -3,25 +3,48 @@ var verymodel = require('verymodel');
 var lodash = require('lodash');
 var assert = require('assert');
 var util = require('util');
+var pg = require('pg');
 
-var default_pg;
+var default_connection;
 
 var model_cache = {};
 
 function Model() {
     verymodel.VeryModel.apply(this, arguments);
-    if (!this.options.pg) this.options.pg = default_pg;
+    if (!this.options.connection) this.options.connection = default_connection;
     model_cache[this.options.name] = this;
 
-    this.getDB = function () {
-        return this.options.pg || default_pg;
+    this.getDB = function (callback) {
+        pg.connect(this.options.connection, function (err, client) {
+
+            if (err) {
+                return err;
+            }
+
+            if (!client.query.patched) {
+                named.patch(client);
+            }
+
+            return callback(null, client);
+        });
     };
 
     var model = this;
 
     this.extendModel({
         getDB: function () {
-            return model.options.default_pg || default_pg;
+            pg.connect(model.options.connection, function (err, client) {
+
+                if (err) {
+                    return err;
+                }
+
+                if (!client.query.patched) {
+                    named.patch(client);
+                }
+
+                return callback(null, client);
+            });
         }
     });
     
@@ -49,12 +72,18 @@ function Model() {
                     return "$" + key;
                 }).join(", ") + ")";
                 var query = util.format("INSERT INTO %s %s %s RETURNING %s", ropts.table, fieldq, valueq, model.alias[model.primary])
-                this.getDB().query(query, input, function (err, result) {
-                    if (!err && result.rows.length > 0) {
-                        this.id = result.rows[0].id;
-                        return callback(err, this);
+                this.getDB(function (err, client) {
+                    if (err) {
+                        return callback(err);
                     }
-                    return callback(err);
+
+                    return client.query(query, input, function (err, result) {
+                        if (!err && result.rows.length > 0) {
+                            this.id = result.rows[0].id;
+                            return callback(err, this);
+                        }
+                        return callback(err);
+                    }.bind(this));
                 }.bind(this));
             },
         });
@@ -80,11 +109,17 @@ function Model() {
                 }
                 query += sets.join(", ");
                 query += util.format(" WHERE %s=$%s", model.alias[model.primary], model.primary);
-                this.getDB().query(query, this.toJSON({withPrivate: true}), function (err, result) {
-                    if (!err) {
-                        return callback(err, this);
+                this.getDB(function (err, client) {
+                    if (err) {
+                        return callback(err);
                     }
-                    return callback(err);
+
+                    return client.query(query, this.toJSON({withPrivate: true}), function (err, result) {
+                        if (!err) {
+                            return callback(err, this);
+                        }
+                        return callback(err);
+                    }.bind(this));
                 }.bind(this));
             }
         });
@@ -130,20 +165,26 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
             } else {
                 opts = {'arg': opts};
             }
-            this.getDB().query(ropts.sql, opts, function (err, results) {
-                var rows = [];
-                if (!err) {
-                    results.rows.forEach(function (row) {
-                       rows.push(this.create(row));
-                    }.bind(this));
+            this.getDB(function (err, client) {
+                if (err) {
+                    return callback(err);
                 }
-                if (ropts.oneResult === true) {
-                    if (rows.length > 0) {
-                        return callback(err, rows[0]);
+
+                return client.query(ropts.sql, opts, function (err, results) {
+                    var rows = [];
+                    if (!err) {
+                        results.rows.forEach(function (row) {
+                           rows.push(this.create(row));
+                        }.bind(this));
                     }
-                    return callback(err, null);
-                }
-                callback(err, rows);
+                    if (ropts.oneResult === true) {
+                        if (rows.length > 0) {
+                            return callback(err, rows[0]);
+                        }
+                        return callback(err, null);
+                    }
+                    callback(err, rows);
+                }.bind(this));
             }.bind(this));
         }.bind(this);
     };
@@ -171,20 +212,26 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
             } else {
                 extendedOps = lodash.extend(opts, this.toJSON());
             }
-            this.getDB().query(ropts.sql, extendedOps, function (err, results) {
-                var rows = [];
-                if (!err) {
-                    results.rows.forEach(function (row) {
-                       rows.push(ropts.model.create(row));
-                    }.bind(this));
+            this.getDB(function (err, client) {
+                if (err) {
+                    return callback(err);
                 }
-                if (ropts.oneResult === true) {
-                    if (rows.length > 0) {
-                        return callback(err, rows[0]);
+
+                client.query(ropts.sql, extendedOps, function (err, results) {
+                    var rows = [];
+                    if (!err) {
+                        results.rows.forEach(function (row) {
+                           rows.push(ropts.model.create(row));
+                        }.bind(this));
                     }
-                    return callback(err, null);
-                }
-                callback(err, rows);
+                    if (ropts.oneResult === true) {
+                        if (rows.length > 0) {
+                            return callback(err, rows[0]);
+                        }
+                        return callback(err, null);
+                    }
+                    callback(err, rows);
+                }.bind(this));
             }.bind(this));
         };
         this.extendModel(extension);
@@ -195,9 +242,8 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
 
 
 module.exports = {
-    registerPG: function (pg) {
-        named.patch(pg);
-        default_pg = pg;
+    setConnection: function (connection) {
+        default_connection = connection;
     },
     Model: Model
 
