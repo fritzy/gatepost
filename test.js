@@ -1,10 +1,12 @@
-var PostGate = require('./');
-var pg = require('pg');
-var client = 'postgres://fritzy@localhost/fritzy';
+"use strict";
+
+let PostGate = require('./');
+let pg = require('pg');
+let client = 'postgres://fritzy@localhost/fritzy';
 
 PostGate.setConnection(client);
 
-var Author = new PostGate.Model({
+let Author = new PostGate.Model({
     name: {type: 'string'},
     books: {collection: {
         title: 'string'

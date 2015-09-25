@@ -15,7 +15,7 @@ function Model() {
     model_cache[this.options.name] = this;
 
     this.getDB = function (callback) {
-        pg.connect(this.options.connection, function (err, client) {
+        pg.connect(this.options.connection, function (err, client, done) {
 
             if (err) {
                 return err;
@@ -25,7 +25,7 @@ function Model() {
                 named.patch(client);
             }
 
-            return callback(null, client);
+            return callback(null, client, done);
         });
     };
 
@@ -33,7 +33,7 @@ function Model() {
 
     this.extendModel({
         getDB: function () {
-            pg.connect(model.options.connection, function (err, client) {
+            pg.connect(model.options.connection, function (err, client, done) {
 
                 if (err) {
                     return err;
@@ -43,7 +43,7 @@ function Model() {
                     named.patch(client);
                 }
 
-                return callback(null, client);
+                return callback(null, client, done);
             });
         }
     });
@@ -72,16 +72,19 @@ function Model() {
                     return "$" + key;
                 }).join(", ") + ")";
                 var query = util.format("INSERT INTO %s %s %s RETURNING %s", ropts.table, fieldq, valueq, model.alias[model.primary])
-                this.getDB(function (err, client) {
+                this.getDB(function (err, client, dbDone) {
                     if (err) {
+                        dbDone();
                         return callback(err);
                     }
 
                     return client.query(query, input, function (err, result) {
                         if (!err && result.rows.length > 0) {
                             this.id = result.rows[0].id;
+                            dbDone();
                             return callback(err, this);
                         }
+                        dbDone();
                         return callback(err);
                     }.bind(this));
                 }.bind(this));
@@ -109,15 +112,18 @@ function Model() {
                 }
                 query += sets.join(", ");
                 query += util.format(" WHERE %s=$%s", model.alias[model.primary], model.primary);
-                this.getDB(function (err, client) {
+                this.getDB(function (err, client, dbDone) {
                     if (err) {
+                        dbDone();
                         return callback(err);
                     }
 
                     return client.query(query, this.toJSON({withPrivate: true}), function (err, result) {
                         if (!err) {
+                            dbDone();
                             return callback(err, this);
                         }
+                        dbDone();
                         return callback(err);
                     }.bind(this));
                 }.bind(this));
@@ -165,8 +171,9 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
             } else {
                 opts = {'arg': opts};
             }
-            this.getDB(function (err, client) {
+            this.getDB(function (err, client, dbDone) {
                 if (err) {
+                    dbDone();
                     return callback(err);
                 }
 
@@ -179,10 +186,13 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
                     }
                     if (ropts.oneResult === true) {
                         if (rows.length > 0) {
+                            dbDone();
                             return callback(err, rows[0]);
                         }
+                        dbDone();
                         return callback(err, null);
                     }
+                    dbDone();
                     callback(err, rows);
                 }.bind(this));
             }.bind(this));
@@ -212,8 +222,9 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
             } else {
                 extendedOps = lodash.extend(opts, this.toJSON());
             }
-            this.getDB(function (err, client) {
+            this.getDB(function (err, client, dbDone) {
                 if (err) {
+                    dbDone();
                     return callback(err);
                 }
 
@@ -226,10 +237,13 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
                     }
                     if (ropts.oneResult === true) {
                         if (rows.length > 0) {
+                            dbDone();
                             return callback(err, rows[0]);
                         }
+                        dbDone();
                         return callback(err, null);
                     }
+                    dbDone();
                     callback(err, rows);
                 }.bind(this));
             }.bind(this));
