@@ -9,9 +9,9 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "lodash": "^3.6.0",
+    "lodash": "^3.10.1",
     "node-postgres-named": "^2.2.0",
-    "pg": "^4.3.0",
-    "verymodel": "^2.1.0"
+    "pg": "^4.4.2",
+    "verymodel": "^2.3.0"
   }
 }

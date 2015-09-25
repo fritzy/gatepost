@@ -33,15 +33,15 @@ var Author = new gatepost.Model({
 
 Author.fromSQL({
     name: "all",
-    sql: "select id, name, "
-    + "("
-    +   "SELECT "
-    +   "json_agg(row_to_json(book_rows)) "
-    +   "from (select id, title from books2 WHERE books2.author_id=authors2.id) book_rows"
-    + ")"
-    + " AS books "
-    + "from authors2;"
-);
+    sql: `select id, name,
+(
+   SELECT 
+   json_agg(row_to_json(book_rows)) 
+   FROM (select id, title from books2 WHERE books2.author_id=authors2.id) book_rows
+ )
+ AS books 
+ FROM authors2`
+});
 
 Author.fromSQL({
     name: 'update',
