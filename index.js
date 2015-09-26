@@ -7,7 +7,6 @@ let pg = require('pg');
 let shortid = require('shortid');
 
 let default_connection;
-
 let model_cache = {};
 
 function Model() {
@@ -48,20 +47,7 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
     return this.registerFactorySQL(ropts);
   }
 
-  function prepQuery(func, args, inst, model, name) {
-    let query = func.call(args, args, inst, model);
-    //if knex query builder
-    if (typeof query === 'object' && query.constructor.name === 'QueryBuilder') {
-      query = query.toString();
-    }
-    if (typeof query === 'string') {
-      query = {text: query};
-    }
-    query.name = `${this.options.name}-${name}`;
-    return query;
-  }
-
-  this.runQuery = function (ropts, query, callback) {
+  this.runQuery = function (opts, query, callback) {
     return new Promise((resolve, reject) => {
       this.getDB((err, client, dbDone) => {
         if (err) {
@@ -77,11 +63,11 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
             return reject(err);
           }
           results.rows.forEach((row) => {
-             rows.push(this.create(row));
+             rows.push(opts.model.create(row));
           });
-          if (rows.length === 0 && (ropts.required || ropts.oneResult)) {
+          if (rows.length === 0 && (opts.required || opts.oneResult)) {
             rows = null;
-          } else if (ropts.oneResult === true && rows.length > 0) {
+          } else if (opts.oneResult === true && rows.length > 0) {
               rows = rows[0];
           }
           if (callback) callback(err, rows);
@@ -91,31 +77,52 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
     });
   };
 
-  this.registerFactorySQL = function (ropts) {
+  function prepArgs(args, callback, opts) {
+    callback = typeof args === 'function' ? args : callback;
+    args = opts.oneArg ? {arg: args} : args;
+    args = typeof args === 'object' ? args : {};
+    args = lodash.defaults(args, opts.defaults || {});
+    return {callback, args};
+  }
 
-    this[ropts.name] = (opts, callback) => {
-      callback = typeof opts === 'function' ? opts : callback;
-      opts = typeof opts === 'object' ? opts : {};
-      opts = lodash.defaults(opts, ropts.defaults || {});
-      
-      let query = prepQuery.call(this, ropts.sql, opts, null, this, ropts.name);
-      return this.runQuery(ropts, query, callback);
+  function prepQuery(func, args, inst, model, name) {
+    let query = func.call(args, args, inst, model);
+    //if knex query builder
+    if (typeof query === 'object' && query.constructor.name === 'QueryBuilder') {
+      query = query.toString();
+    }
+    if (typeof query === 'string') {
+      query = {text: query};
+    }
+    query.name = `${model.options.name}-${name}`;
+    return query;
+  }
+
+  this.prepOpts = function (opts) {
+    if (!opts.model) {
+      opts.model = this;
+    } else if (typeof opts.model === 'string') {
+      opts.model = model_cache[opts.model];
+    }
+    return opts;
+  };
+
+  this.registerFactorySQL = function (opts) {
+    opts = this.prepOpts(opts);
+    this[opts.name] = (args, callback) => {
+      let config = prepArgs(args, callback, opts, this);
+      let query = prepQuery(opts.sql, config.args, null, this, opts.name);
+      return this.runQuery(opts, query, config.callback);
     };
   };
 
-  this.registerInstanceSQL = function (ropts) {
-    if (!ropts.model) {
-      ropts.model = this;
-    }
-    if (typeof ropts.model === 'string') {
-      ropts.model = model_cache[ropts.model];
-    }
+  this.registerInstanceSQL = function (opts) {
     let extension = {};
-    extension[ropts.name] = function (opts, callback) {
-      callback = typeof opts === 'function' ? opts : callback;
-      
-      let query = prepQuery.call(this.__verymeta.model, ropts.sql, opts, this, this.__verymeta.model, `inst-${ropts.name}`);
-      return this.__verymeta.model.runQuery(ropts, query, callback);
+    opts = this.prepOpts(opts);
+    extension[opts.name] = function (args, callback) {
+      let config = prepArgs(args, callback, opts);
+      let query = prepQuery(opts.sql, config.args, this, this.__verymeta.model, `inst-${opts.name}`);
+      return this.__verymeta.model.runQuery(opts, query, config.callback);
     };
     this.extendModel(extension);
   };

@@ -99,17 +99,17 @@ Generate a Factory or Instance method from SQL for your Model
 #### Options
 
  * `name`: [string] method name
- * `sql`: [string or function]
+ * `sql`: [function] returns the query object or string for pg.query.
  * `oneResult`: [boolean] only get one model intance or null rather than array
  * `instance`: [boolean] Add the method to model instances rather than the factory.
  * `model`: [Model or string] cast the results into this model
-
+ * `oneArg`: [boolean] the first argument of the method will be set as `arg` in the `args` object for the `sql` function.
 
 #### Generated Method
 
 `function (args, callback);`
 
- * `args`: [object] optional, the first argument passed to the `sql` function
+ * `args`: [object unless oneArg set] optional, the first argument passed to the `sql` function
  * `callback`: [function] optional
 
 

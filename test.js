@@ -30,17 +30,20 @@ FROM authors2`
 
 
 Author.getAll(function (err, authors) {
-    console.log(authors[0].toJSON());
-    pg.end();
+  console.log(authors[0].toJSON());
 });
 
 Book.fromSQL({
     name: 'getAll',
-    sql: (args) => knex.select('id', 'title').from('books2').orderBy(args.order).groupBy(args.order, 'id')
+    sql: (args) => knex.select('id', 'title').from('books2').orderBy(args.arg),
+    oneArg: true,
 });
 
-Book.getAll({order: 'title'})
+Book.getAll('title')
 .then((results) => {
     results.forEach((result) => console.log(result.toJSON()));
 })
-.catch((error) => console.log(`error: ${error}`));
+.catch((error) => console.log(`error: ${error}`))
+.then(() => {
+  pg.end()
+});
