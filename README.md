@@ -103,7 +103,6 @@ Generate a Factory or Instance method from SQL for your Model
  * `oneResult`: [boolean] only get one model intance or null rather than array
  * `instance`: [boolean] Add the method to model instances rather than the factory.
  * `model`: [Model or string] cast the results into this model
- * `oneArg`: [boolean] the first argument of the method will be set as `arg` in the `args` object for the `sql` function.
 
 #### Generated Method
 

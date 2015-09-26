@@ -79,7 +79,6 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
 
   function prepArgs(args, callback, opts) {
     callback = typeof args === 'function' ? args : callback;
-    args = opts.oneArg ? {arg: args} : args;
     args = typeof args === 'object' ? args : {};
     args = lodash.defaults(args, opts.defaults || {});
     return {callback, args};
