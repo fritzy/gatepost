@@ -9,7 +9,7 @@ GatePost.setConnection(client);
 
 let Book = new GatePost.Model({
     title: {type: 'string'},
-    id: {type: 'integer'}
+    id: {type: 'integer'},
 });
 
 let Author = new GatePost.Model({
@@ -36,10 +36,11 @@ Author.getAll(function (err, authors) {
 
 Book.fromSQL({
     name: 'getAll',
-    sql: (args) => knex.select('id', 'title').from('books2').orderBy(args.order)
+    sql: (args) => knex.select('id', 'title').from('books2').orderBy(args.order).groupBy(args.order, 'id')
 });
 
 Book.getAll({order: 'title'})
 .then((results) => {
     results.forEach((result) => console.log(result.toJSON()));
-});
+})
+.catch((error) => console.log(`error: ${error}`));
