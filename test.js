@@ -35,11 +35,11 @@ Author.getAll(function (err, authors) {
 
 Book.fromSQL({
     name: 'getAll',
-    sql: (args) => knex.select('id', 'title').from('books2').orderBy(args.arg),
+    sql: (args) => knex.select('id', 'title').from('books2').orderBy(args.orderBy),
     oneArg: true,
 });
 
-Book.getAll('title')
+Book.getAll({orderBy: 'title'})
 .then((results) => {
     results.forEach((result) => console.log(result.toJSON()));
 })

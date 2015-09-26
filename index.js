@@ -4,7 +4,6 @@ let verymodel = require('verymodel');
 let lodash = require('lodash');
 let assert = require('assert');
 let pg = require('pg');
-let shortid = require('shortid');
 
 let default_connection;
 let model_cache = {};
@@ -12,9 +11,6 @@ let model_cache = {};
 function Model() {
   verymodel.VeryModel.apply(this, arguments);
   if (!this.options.connection) this.options.connection = default_connection;
-  if (!this.options.hasOwnProperty('name')) {
-    this.options.name = shortid();
-  }
   model_cache[this.options.name] = this;
 
   this.getDB = function (callback) {
@@ -93,7 +89,6 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
     if (typeof query === 'string') {
       query = {text: query};
     }
-    query.name = `${model.options.name}-${name}`;
     return query;
   }
 
