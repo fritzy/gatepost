@@ -1,8 +1,17 @@
 {
   "name": "gatepost",
-  "version": "5.2.1",
+  "version": "5.2.2",
   "description": "A reverse ORM for Postgres.",
-  "keywords": ["pg", "postgres", "postgresql", "database", "db", "orm", "query", "sql"],
+  "keywords": [
+    "pg",
+    "postgres",
+    "postgresql",
+    "database",
+    "db",
+    "orm",
+    "query",
+    "sql"
+  ],
   "main": "index.js",
   "homepage": "https://github.com/fritzy/gatepost",
   "repository": {
