@@ -12,6 +12,8 @@
     "lodash": "^3.10.1",
     "node-postgres-named": "^2.2.0",
     "pg": "^4.4.2",
+    "shortid": "^2.2.2",
+    "sql-template-strings": "^1.0.2",
     "verymodel": "^2.3.0"
   }
 }

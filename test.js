@@ -1,12 +1,12 @@
 "use strict";
 
-let PostGate = require('./');
+let GatePost = require('./');
 let pg = require('pg');
 let client = 'postgres://fritzy@localhost/fritzy';
 
-PostGate.setConnection(client);
+GatePost.setConnection(client);
 
-let Author = new PostGate.Model({
+let Author = new GatePost.Model({
     name: {type: 'string'},
     books: {collection: {
         title: 'string'
@@ -15,12 +15,12 @@ let Author = new PostGate.Model({
 
 Author.registerFactorySQL({
     name: 'getAll',
-    sql: `SELECT id, name,
-(SELECT 
- json_agg(row_to_json(book_rows)) 
+    sql: () => GatePost.SQL`SELECT id, name,
+(SELECT
+ json_agg(row_to_json(book_rows))
  FROM (select id, title from books2 WHERE books2.author_id=authors2.id) book_rows
 )
-AS books 
+AS books
 FROM authors2`
 });
 
