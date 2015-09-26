@@ -135,12 +135,14 @@ Either use the returned promise or set a callback. I doubt there's a use case fo
 ```javascript
 let knex = require('knex')({dialect: 'pg'});
 
+//knex query builders are dealt with automatically
 Book.fromSQL({
   name: 'getByCategory',
   sql: (args) => knex.select('id', 'title', 'author')
   .from('books').where({category: args.category})
 });
 
+//using callbacks
 Book.getByCategory({category: 'cheese'}), function (err, results) {
   if (!err) results.forEach((book) => console.log(book.toJSON());
 });
@@ -149,6 +151,8 @@ Book.getByCategory({category: 'cheese'}), function (err, results) {
 ```javascript
 let SQL = require('sql-template-strings');
 
+//sql-template-strings template tag returns a {text, values} object
+//which gets turned into a prepare statement by gatepost
 Book.fromSQL({
   name: 'insert',
   //using a template string
@@ -170,4 +174,4 @@ book.insert()
 
 ### setConnection
 
- Configure the `pg` postgres client with gatepost to use for queries. Accepts anything valid in the first parameter of [pg.connect](https://github.com/brianc/node-postgres/wiki/pg#parameters).
+Configure the `pg` postgres client with gatepost to use for queries. Accepts anything valid in the first parameter of [pg.connect](https://github.com/brianc/node-postgres/wiki/pg#parameters).
