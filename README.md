@@ -7,13 +7,14 @@ Gatepost allows you define [VeryModel](https://github.com/fritzy/verymodel) mode
 You can write queries where the results are cast as the model (factory methods) or where the model instance is used as input.
 
 ```javascript
-var gatepost = require('gatepost');
-var pg = require('pg');
-var joi = require('joi');
+"use strict";
+let gatepost = require('gatepost');
+let joi = require('joi');
+let SQL = require('sql-template-strings');
 
 gatepost.setConnection('postgres://fritzy@localhost/fritzy');
 
-var Book = new gatepost.Model({
+let Book = new gatepost.Model({
     id: {type: 'integer', primary: true},
     title: {validate: joi.string().max(100).min(4)},
     author: {validate: joi.number().integer()}
@@ -22,7 +23,7 @@ var Book = new gatepost.Model({
     cache: true
 });
 
-var Author = new gatepost.Model({
+let Author = new gatepost.Model({
     id: {type: 'integer', primary: true},
     name: {type: 'string'},
     books: {collection: Book}
@@ -35,11 +36,11 @@ Author.fromSQL({
     name: "all",
     sql: `select id, name,
 (
-   SELECT 
-   json_agg(row_to_json(book_rows)) 
+   SELECT
+   json_agg(row_to_json(book_rows))
    FROM (select id, title from books2 WHERE books2.author_id=authors2.id) book_rows
  )
- AS books 
+ AS books
  FROM authors2`
 });
 
@@ -47,7 +48,7 @@ Author.fromSQL({
     name: 'update',
     instance: true,
     oneResult: true,
-    sql: "UPDATE books2 SET title=$title WHERE id=$id"
+    sql: (args, model) => SQL`UPDATE books2 SET title=${model.title} WHERE id=${model.id}`
 });
 
 client.connect(function () {
@@ -74,20 +75,18 @@ client.connect(function () {
 You don't have to write your SQL by hand. You could, for example, use Knex to generate your postgres flavored SQL.
 
 ```javascript
-var knex = require('knex')({dialect: 'pg'});
-var sqlString = knex.select('id', 'title').from('books2').whereRaw('id = $id').toString();
+let knex = require('knex')({dialect: 'pg'});
+let sqlString = knex.select('id', 'title').from('books2').whereRaw('id = $id').toString();
 ```
 
 # Model extensions
 
 See [VeryModel documentation](https://github.com/fritzy/verymodel) for information on using `gatepost.Model`s.
 
-Extended definiton: `primary` for indicating primary fields
-
 __Model options__:
 
- * name: string used for naming the model
- * cache: to refer to the model by string
+ * name: [string] used for naming the model
+ * cache: [boolean] to refer to the model by string
 
 ## Functions
 
@@ -95,30 +94,42 @@ __Model options__:
 
 Generate a Factory or Instance method from SQL for your Model
 
-__options:__
+__Options:__
 
- * name: required, string
- * sql: SQL string of query with $field replacors
- * oneResult: Boolean, if true returns a single model instance in the callback rather than an array of instances
- * oneArg: Boolean, the function takes a parameter rather than an object of parameters with the name $arg
- * instance: Boolean. Add the method to model instances rather than the factory. The instance fields are used as input
- * asJSON: Boolean. If `instance` is `true`, assign the model instance as a json object assigned to the model `name` eg: $book
- * model: verymodel or string, When `instance` is `true`, cast the results into this model rather than the model the function is bound to.
+ * `name`: [string] method name
+ * `sql`: [string or function]
+ * `oneResult`: [boolean] only get one model intance or null rather than array
+ * `instance`: [boolean] Add the method to model instances rather than the factory.
+ * `model`: [Model or string] cast the results into this model
+
 
  __generated function signature__
- 
+
 `function (args, callback);`
 
-`args` is optional, and sets the arguments to instert into the SQL. For instanced methods, it extends the arguments already supplied by the model.
+`args` is optional and passed as the first argument to the `sql` function.
 
-`callback` is not optional
- 
-__callback signature__
+`callback` [function] optional
+
+#### Callback Function
 
 `function (postgresError, results);`
 
 The results are an array of model instances, or a single model if `oneResult` was set to true (null if no results).
- 
+
+#### Returned Promise
+
+Calling a method generated from `fromSQL` returns a [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) which will `then` with the `results` (same as callback results) or `catch` with a Postgres error from [pg](https://npmjs.org/package/pg).
+
+
+#### SQL Function
+
+ * `args`: [object] arguments passed as the first option
+ * `model`: [Model] for instances, the model instance that the function is called to
+
+
+ #### Examples
+
 ### setConnection
 
  Configure the `pg` postgres client with gatepost to use for queries. Accepts anything valid in the first parameter of [pg.connect](https://github.com/brianc/node-postgres/wiki/pg#parameters).

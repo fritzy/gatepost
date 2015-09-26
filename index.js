@@ -3,7 +3,6 @@
 let verymodel = require('verymodel');
 let lodash = require('lodash');
 let assert = require('assert');
-let util = require('util');
 let pg = require('pg');
 let shortid = require('shortid');
 
@@ -24,8 +23,6 @@ function Model() {
       callback(err, db, done);
     });
   };
-
-  let model = this;
 
   this.extendModel({
     getDB: function (callback) {
@@ -53,11 +50,12 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
 
   function prepQuery(func, args, inst, model, name) {
     let query = func.call(args, args, inst, model);
+    //if knex query builder
+    if (typeof query === 'object' && query.constructor.name === 'QueryBuilder') {
+      query = query.toString();
+    }
     if (typeof query === 'string') {
-      query = {
-        text: query,
-        values: []
-      }
+      query = {text: query};
     }
     query.name = `${this.options.name}-${name}`;
     return query;
@@ -97,14 +95,8 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
 
     this[ropts.name] = (opts, callback) => {
       callback = typeof opts === 'function' ? opts : callback;
-
-      if (ropts.oneArg !== true) {
-        opts = typeof opts === 'object' ? opts : {};
-      } else {
-        opts = {'arg': opts};
-      }
-      ropts.defaults = ropts.defaults || {};
-      opts = lodash.defaults(opts, ropts.defaults);
+      opts = typeof opts === 'object' ? opts : {};
+      opts = lodash.defaults(opts, ropts.defaults || {});
       
       let query = prepQuery.call(this, ropts.sql, opts, null, this, ropts.name);
       return this.runQuery(ropts, query, callback);
@@ -121,13 +113,8 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
     let extension = {};
     extension[ropts.name] = function (opts, callback) {
       callback = typeof opts === 'function' ? opts : callback;
-      let inst = this;
-      if (ropts.asJSON) {
-        inst = {};
-        inst[ropts.model.options.name] = this.toJSON();
-      }
       
-      let query = prepQuery.call(this.__verymeta.model, ropts.sql, opts, inst, this.__verymeta.model, `inst-${ropts.name}`);
+      let query = prepQuery.call(this.__verymeta.model, ropts.sql, opts, this, this.__verymeta.model, `inst-${ropts.name}`);
       return this.__verymeta.model.runQuery(ropts, query, callback);
     };
     this.extendModel(extension);
