@@ -11,14 +11,16 @@ Feel free to use knex, template strings, or other methods for generating your SQ
 
 ```javascript
 "use strict";
+
 let gatepost = require('gatepost');
 let joi = require('joi');
 let SQL = require('sql-template-strings');
+let knex = require('knex')({dialect: 'pg'});
 
 gatepost.setConnection('postgres://fritzy@localhost/fritzy');
 
 let Book = new gatepost.Model({
-  id: {type: 'integer', primary: true},
+  id: {validate: joi.number().integer()},
   title: {validate: joi.string().max(100).min(4)},
   author: {validate: joi.number().integer()}
 }, {
@@ -27,17 +29,18 @@ let Book = new gatepost.Model({
 });
 
 let Author = new gatepost.Model({
-  id: {type: 'integer', primary: true},
-  name: {type: 'string'},
+  id: {validator: joi.number().integer()},  
+  name: {validator: joi.string()},
   books: {collection: Book}
 }, {
   name: 'author',
   cache: true
 });
 
+//using json_agg to cast sub-collection values
 Author.fromSQL({
   name: "all",
-  sql: `select id, name,
+  sql: `SELECT id, name,
 (
    SELECT
    json_agg(row_to_json(book_rows))
@@ -47,6 +50,7 @@ Author.fromSQL({
  FROM authors2`
 });
 
+//passing arguments or using the model instance for setting literals
 Author.fromSQL({
   name: 'update',
   instance: true,
@@ -54,15 +58,15 @@ Author.fromSQL({
   sql: (args, model) => SQL`UPDATE books2 SET title=${model.title} WHERE id=${model.id}`
 });
 
-client.connect(function () {
-  Author.getAll(function (err, authors) {
-    console.log(authors[0].toJSON());
-    client.end();
-    authors[0].books[0].title = 'Happy Fun Times: The End';
-    authors[0].books[0].update(function (err) {
-      //...
-    });
-  });
+//use promises or callbacks
+Author.all()
+.then(function (result) {
+  console.log(authors[0].toJSON());
+  authors[0].books[0].title = 'Happy Fun Times: The End';
+  return authors[0].books[0].update();
+})
+.catch(function (err) {
+  console.log(`Postgres Error: ${err}`);
 });
 ```
 
