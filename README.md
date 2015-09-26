@@ -18,26 +18,26 @@ let SQL = require('sql-template-strings');
 gatepost.setConnection('postgres://fritzy@localhost/fritzy');
 
 let Book = new gatepost.Model({
-    id: {type: 'integer', primary: true},
-    title: {validate: joi.string().max(100).min(4)},
-    author: {validate: joi.number().integer()}
+  id: {type: 'integer', primary: true},
+  title: {validate: joi.string().max(100).min(4)},
+  author: {validate: joi.number().integer()}
 }, {
-    name: 'book',
-    cache: true
+  name: 'book',
+  cache: true
 });
 
 let Author = new gatepost.Model({
-    id: {type: 'integer', primary: true},
-    name: {type: 'string'},
-    books: {collection: Book}
+  id: {type: 'integer', primary: true},
+  name: {type: 'string'},
+  books: {collection: Book}
 }, {
-    name: 'author',
-    cache: true
+  name: 'author',
+  cache: true
 });
 
 Author.fromSQL({
-    name: "all",
-    sql: `select id, name,
+  name: "all",
+  sql: `select id, name,
 (
    SELECT
    json_agg(row_to_json(book_rows))
@@ -48,38 +48,29 @@ Author.fromSQL({
 });
 
 Author.fromSQL({
-    name: 'update',
-    instance: true,
-    oneResult: true,
-    sql: (args, model) => SQL`UPDATE books2 SET title=${model.title} WHERE id=${model.id}`
+  name: 'update',
+  instance: true,
+  oneResult: true,
+  sql: (args, model) => SQL`UPDATE books2 SET title=${model.title} WHERE id=${model.id}`
 });
 
 client.connect(function () {
-    Author.getAll(function (err, authors) {
-        console.log(authors[0].toJSON());
-        client.end();
-        authors[0].books[0].title = 'Happy Fun Times: The End';
-        authors[0].books[0].update(function (err) {
-            //...
-        });
+  Author.getAll(function (err, authors) {
+    console.log(authors[0].toJSON());
+    client.end();
+    authors[0].books[0].title = 'Happy Fun Times: The End';
+    authors[0].books[0].update(function (err) {
+      //...
     });
+  });
 });
 ```
 
 ```javascript
 { name: 'Nathan Fritz',
   books:
-    [ { title: 'Happy Fun Times' },
-    { title: 'Derpin with the Stars' } ] }
-```
-
-# Knex and others
-
-You don't have to write your SQL by hand. You could, for example, use Knex to generate your postgres flavored SQL.
-
-```javascript
-let knex = require('knex')({dialect: 'pg'});
-let sqlString = knex.select('id', 'title').from('books2').whereRaw('id = $id').toString();
+  [ { title: 'Happy Fun Times' },
+  { title: 'Derpin with the Stars' } ] }
 ```
 
 # Model extensions
@@ -141,12 +132,13 @@ Either use the returned promise or set a callback. I doubt there's a use case fo
 let knex = require('knex')({dialect: 'pg'});
 
 Book.fromSQL({
-    name: 'getByCategory',
-    sql: (args) => knex.select('id', 'title', 'author').from('books').where({category: args.category})
+  name: 'getByCategory',
+  sql: (args) => knex.select('id', 'title', 'author')
+  .from('books').where({category: args.category})
 });
 
 Book.getByCategory({category: 'cheese'}), function (err, results) {
-    if (!err) results.forEach((book) => console.log(book.toJSON());
+  if (!err) results.forEach((book) => console.log(book.toJSON());
 });
 ```
 
@@ -154,13 +146,19 @@ Book.getByCategory({category: 'cheese'}), function (err, results) {
 let SQL = require('sql-template-strings');
 
 Book.fromSQL({
-    name: 'insert',
-    sql: (args, model) => SQL`INSERT INTO books (title, author, category) VALUES (${model.title}, ${model.author}, ${model.category}) RETURNING id`,
-    instance: true,
-    oneResult: true
+  name: 'insert',
+  //using a template string
+  sql: (args, model) => SQL`INSERT INTO books
+(title, author, category)
+VALUES (${model.title}, ${model.author}, ${model.category})
+RETURNING id`,
+  instance: true,
+  oneResult: true
 });
 
 let book = Book.create({title: 'Ham and You', author: 'Nathan Fritz', category: 'ham'});
+
+//using promises
 book.insert()
 .then((result) => console.log(`Book ID: ${book.id}`))
 .catch((error) => console.log(`Gadzoons and error! ${error}`));
