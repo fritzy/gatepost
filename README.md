@@ -2,9 +2,12 @@
 
 [![npm i gatepost](https://nodei.co/npm/gatepost.png)](https://www.npmjs.com/package/gatepost)
 
-Gatepost allows you define [VeryModel](https://github.com/fritzy/verymodel) models for the purpose of binding to SQL statements.
+Gatepost facilitates binding SQL statements to Model factories and instances, with the results cast as Model instance.
+With most ORMs have you model the database schema, but with Gatepost, you're not concerned with the database structure, only with what your queries return.
 
-You can write queries where the results are cast as the model (factory methods) or where the model instance is used as input.
+Gatepost uses [VeryModel](https://github.com/fritzy/verymodel) for Model factories and instances, giving you a lot of flexibility such as sharing your validation between your API and database, auto-converting values, etc.
+
+Feel free to use knex, template strings, or other methods for generating your SQL. Use callbacks or promises. Gatepost is designed to stay out of your way.
 
 ```javascript
 "use strict";
@@ -83,10 +86,10 @@ let sqlString = knex.select('id', 'title').from('books2').whereRaw('id = $id').t
 
 See [VeryModel documentation](https://github.com/fritzy/verymodel) for information on using `gatepost.Model`s.
 
-__Model options__:
+##Model options:
 
- * name: [string] used for naming the model
- * cache: [boolean] to refer to the model by string
+ * `name`: [string] used for naming the model
+ * `cache`: [boolean] to refer to the model by string
 
 ## Functions
 
@@ -94,7 +97,11 @@ __Model options__:
 
 Generate a Factory or Instance method from SQL for your Model
 
-__Options:__
+#### Arguments:
+
+ * `options`: [object]
+
+#### Options
 
  * `name`: [string] method name
  * `sql`: [string or function]
@@ -103,13 +110,13 @@ __Options:__
  * `model`: [Model or string] cast the results into this model
 
 
- __generated function signature__
+#### Generated Method
 
 `function (args, callback);`
 
-`args` is optional and passed as the first argument to the `sql` function.
+ * `args`: [object] optional, the first argument passed to the `sql` function
+ * `callback`: [function] optional
 
-`callback` [function] optional
 
 #### Callback Function
 
@@ -121,14 +128,43 @@ The results are an array of model instances, or a single model if `oneResult` wa
 
 Calling a method generated from `fromSQL` returns a [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) which will `then` with the `results` (same as callback results) or `catch` with a Postgres error from [pg](https://npmjs.org/package/pg).
 
+Either use the returned promise or set a callback. I doubt there's a use case for using both.
 
 #### SQL Function
 
  * `args`: [object] arguments passed as the first option
  * `model`: [Model] for instances, the model instance that the function is called to
 
+#### Examples
 
- #### Examples
+```javascript
+let knex = require('knex')({dialect: 'pg'});
+
+Book.fromSQL({
+    name: 'getByCategory',
+    sql: (args) => knex.select('id', 'title', 'author').from('books').where({category: args.category})
+});
+
+Book.getByCategory({category: 'cheese'}), function (err, results) {
+    if (!err) results.forEach((book) => console.log(book.toJSON());
+});
+```
+
+```javascript
+let SQL = require('sql-template-strings');
+
+Book.fromSQL({
+    name: 'insert',
+    sql: (args, model) => SQL`INSERT INTO books (title, author, category) VALUES (${model.title}, ${model.author}, ${model.category}) RETURNING id`,
+    instance: true,
+    oneResult: true
+});
+
+let book = Book.create({title: 'Ham and You', author: 'Nathan Fritz', category: 'ham'});
+book.insert()
+.then((result) => console.log(`Book ID: ${book.id}`))
+.catch((error) => console.log(`Gadzoons and error! ${error}`));
+```
 
 ### setConnection
 
