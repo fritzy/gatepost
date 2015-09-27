@@ -174,3 +174,11 @@ book.insert()
 ### setConnection
 
 Configure the `pg` postgres client with gatepost to use for queries. Accepts anything valid in the first parameter of [pg.connect](https://github.com/brianc/node-postgres/wiki/pg#parameters).
+
+## LICENSE
+
+The MIT License (MIT)
+
+Copyright (c) 2015 Nathanael C. Fritz
+
+See LICENSE for the full text.
