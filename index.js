@@ -4,14 +4,14 @@ let verymodel = require('verymodel');
 let lodash = require('lodash');
 let assert = require('assert');
 let pg = require('pg');
+let async = require('async');
+let Joi = require('joi');
 
 let default_connection;
-let model_cache = {};
 
 function Model() {
   verymodel.VeryModel.apply(this, arguments);
   if (!this.options.connection) this.options.connection = default_connection;
-  model_cache[this.options.name] = this;
 
   this.getDB = function (callback) {
     pg.connect(this.options.connection, function (err, db, done) {
@@ -43,29 +43,39 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
     return this.registerFactorySQL(ropts);
   }
 
-  this.runQuery = function (opts, query, callback) {
+  this.runQuery = function (opts, queries, callback) {
     return new Promise((resolve, reject) => {
+      if (opts.validationError) {
+        if (callback) {
+          callback(opts.validationError);
+        }
+        return reject(opts.validationError);
+      }
       this.getDB((err, client, dbDone) => {
         if (err) {
           dbDone();
           if (callback) callback(err);
           return reject(err);
         }
-        return client.query(query, (err, results) => {
-          dbDone();
-          let rows = [];
-          if (err) {
-            if (callback) callback(err);
-            return reject(err);
-          }
-          results.rows.forEach((row) => {
-             rows.push(opts.model.create(row));
+        async.reduce(queries, [], (rows, query, nextCB) => {
+          client.query(query, (err, results) => {
+            if (err) {
+              return nextCB(err);
+            }
+            results.rows.forEach((row) => {
+               rows.push(opts.model.create(row));
+            });
+            nextCB(null, rows);
           });
-          if (rows.length === 0 && (opts.required || opts.oneResult)) {
-            rows = null;
-          } else if (opts.oneResult === true && rows.length > 0) {
-              rows = rows[0];
+        }, (err, rows) => {
+          if (!err) {
+            if (rows.length === 0 && (opts.required || opts.oneResult)) {
+              rows = null;
+            } else if (opts.oneResult === true && rows.length > 0) {
+                rows = rows[0];
+            }
           }
+          dbDone();
           if (callback) callback(err, rows);
           return err ? reject(err) : resolve(rows);
         });
@@ -77,19 +87,37 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
     callback = typeof args === 'function' ? args : callback;
     args = typeof args === 'object' ? args : {};
     args = lodash.defaults(args, opts.defaults || {});
+    opts.validateOpts = opts.validateOpts || null;
+    if (opts.validate) {
+      let valRes = Joi.validate(args, opts.validate, opts.validateOpts);
+      if (valRes.error) {
+        opts.validationError = valRes.error;
+      } else {
+        args = valRes.value;
+      }
+    }
     return {callback, args};
   }
 
   function prepQuery(func, args, inst, model, name) {
-    let query = func.call(args, args, inst, model);
-    //if knex query builder
-    if (typeof query === 'object' && query.constructor.name === 'QueryBuilder') {
-      query = query.toString();
+    let queries = func.call(args, args, inst, model);
+
+    if (!Array.isArray(queries)) {
+      queries = [queries];
     }
-    if (typeof query === 'string') {
-      query = {text: query};
-    }
-    return query;
+
+    queries = queries.map((query) => {
+
+      //if knex query builder
+      if (typeof query === 'object' && query.constructor.name === 'QueryBuilder') {
+        query = query.toString();
+      }
+      if (typeof query === 'string') {
+        query = {text: query};
+      }
+      return query;
+    });
+    return queries;
   }
 
   this.prepOpts = function (opts) {
@@ -115,6 +143,10 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
     opts = this.prepOpts(opts);
     extension[opts.name] = function (args, callback) {
       let config = prepArgs(args, callback, opts);
+      let errors = this.doValidate();
+      if (errors.length > 0) {
+        opts.validationError = errors[0];
+      }
       let query = prepQuery(opts.sql, config.args, this, this.__verymeta.model, `inst-${opts.name}`);
       return this.__verymeta.model.runQuery(opts, query, config.callback);
     };

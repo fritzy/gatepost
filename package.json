@@ -19,17 +19,21 @@
     "url": "git://github.com/fritzy/gatepost.git"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "nodeunit test/index.js"
   },
   "author": "Nathan Fritz",
   "license": "MIT",
   "dependencies": {
+    "async": "^1.4.2",
+    "joi": "^6.7.1",
     "lodash": "^3.10.1",
     "pg": "^4.4.2",
     "verymodel": "^2.3.0"
   },
   "devDependencies": {
+    "getconfig": "^2.1.0",
     "knex": "^0.8.6",
-    "sql-template-strings": "^1.0.2"
+    "nodeunit": "^0.9.1",
+    "sql-template-strings": "^1.1.0"
   }
 }

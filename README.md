@@ -1,5 +1,7 @@
 #Gatepost: Bind to Models From SQL
 
+![cow opening gate](https://cldup.com/UdnyhwUfRF.png)
+
 [![npm i gatepost](https://nodei.co/npm/gatepost.png)](https://www.npmjs.com/package/gatepost)
 
 Gatepost facilitates binding SQL statements to Model factories and instances, with the results cast as Model instance.
@@ -99,10 +101,13 @@ Generate a Factory or Instance method from SQL for your Model
 #### Options
 
  * `name`: [string] method name
- * `sql`: [function] returns the query object or string for pg.query.
+ * `sql`: [function] returns the query object or string for pg.query or array of these.
  * `oneResult`: [boolean] only get one model intance or null rather than array
  * `instance`: [boolean] Add the method to model instances rather than the factory.
  * `model`: [Model or string] cast the results into this model
+ * `validate`: [Joi Schema] validate the args with this [Joi Schema](https://npmjs.org/package/joi)
+ * `validateOps`: [object] Options passed to Joi.validate when validating arguments
+ * `validateModel`: [boolean] True by default, instanced methods will validate the model (second arg) before running query.
 
 #### Generated Method
 
@@ -174,6 +179,12 @@ book.insert()
 ### setConnection
 
 Configure the `pg` postgres client with gatepost to use for queries. Accepts anything valid in the first parameter of [pg.connect](https://github.com/brianc/node-postgres/wiki/pg#parameters).
+
+## Running Tests
+
+Either create a database called testdb or `cp config/default.json config/local.json` and update the uri.
+
+Then run `npm test`
 
 ## LICENSE
 

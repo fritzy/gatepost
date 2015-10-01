@@ -4,6 +4,7 @@ let GatePost = require('./');
 let pg = require('pg');
 let client = 'postgres://fritzy@localhost/fritzy';
 let knex = require('knex')({dialect: 'pg'});
+let Joi = require('joi');
 
 GatePost.setConnection(client);
 
@@ -19,13 +20,13 @@ let Author = new GatePost.Model({
 
 Author.registerFactorySQL({
     name: 'getAll',
-    sql: () => `SELECT id, name,
+    sql: () => [`SET LOCAL ROLE test`, `SELECT id, name,
 (SELECT
  json_agg(row_to_json(book_rows))
- FROM (select id, title from books2 WHERE books2.author_id=authors2.id) book_rows
+ FROM (select id, title from books WHERE books.author_id=authors.id) book_rows
 )
 AS books
-FROM authors2`
+FROM authors`]
 });
 
 
@@ -35,15 +36,20 @@ Author.getAll(function (err, authors) {
 
 Book.fromSQL({
     name: 'getAll',
-    sql: (args) => knex.select('id', 'title').from('books2').orderBy(args.orderBy),
+    sql: (args) => knex.select('id', 'title').from('books').orderBy(args.orderBy),
     oneArg: true,
+    validate: {
+      orderBy: Joi.string()
+    }
 });
 
-Book.getAll({orderBy: 'title'})
+Book.getAll({orderBy: 12})
 .then((results) => {
-    results.forEach((result) => console.log(result.toJSON()));
+  results.forEach((result) => console.log(result.toJSON()));
 })
-.catch((error) => console.log(`error: ${error}`))
+.catch((error) => {
+  console.log(`error: ${error}`)
+})
 .then(() => {
   pg.end()
 });
