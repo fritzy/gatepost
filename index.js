@@ -130,6 +130,9 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
   };
 
   this.registerFactorySQL = function (opts) {
+    if (typeof this[opts.name] !== 'undefined') {
+      throw new Error(`Gatepost Model "${this.options.name}" already has a property named "${opts.name}"`);
+    }
     opts = this.prepOpts(opts);
     this[opts.name] = (args, callback) => {
       let config = prepArgs(args, callback, opts, this);
@@ -139,6 +142,9 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
   };
 
   this.registerInstanceSQL = function (opts) {
+    if (typeof this.controllers[opts.name] !== 'undefined') {
+      throw new Error(`Instances of Gatepost Model "${this.options.name}" already have a property named "${opts.name}"`);
+    }
     let extension = {};
     opts = this.prepOpts(opts);
     extension[opts.name] = function (args, callback) {

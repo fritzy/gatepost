@@ -96,6 +96,25 @@ module.exports = {
       test.done();
     });
   },
+  "override factory fail": (test) => {
+    test.throws(() => {
+      Author.fromSQL({
+        name: 'create',
+        sql: () => `POOOOO`
+      });
+    });
+    test.done()
+  },
+  "override instance fail": (test) => {
+    test.throws(() => {
+      Author.fromSQL({
+        name: 'addAuthor',
+        sql: () => `POOOOO`,
+        instance: true
+      });
+    });
+    test.done()
+  },
   done: (test) => {
     Book.dropBook().then(() => {
       return Author.dropAuthor();
