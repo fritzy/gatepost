@@ -74,7 +74,7 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
             results.rows.forEach((row) => {
                rows.push(opts.model.create(row));
             });
-            nextCB(null, rows);
+            nextCB(undefined, rows);
           });
         }, (err, rows) => {
           if (!err) {
@@ -163,8 +163,8 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
     extension[opts.name] = function (args, callback) {
       let config = prepArgs(args, callback, opts);
       let errors = this.doValidate();
-      if (errors.length > 0) {
-        opts.validationError = errors[0];
+      if (errors.error !== null) {
+        opts.validationError = errors;
       }
       let query = prepQuery(opts.sql, config.args, this, this.__verymeta.model, `inst-${opts.name}`);
       return this.__verymeta.model.runQuery(opts, query, config.callback);

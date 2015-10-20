@@ -92,7 +92,7 @@ module.exports = {
   "instance: create row fail": (test) => {
     let author = Author.create({name: 34});
     author.addAuthor((err, a2) => {
-      test.ok(err);
+      test.ok(err.error !== null);
       test.done();
     });
   },

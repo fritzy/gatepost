@@ -28,7 +28,7 @@
     "joi": "^6.7.1",
     "lodash": "^3.10.1",
     "pg": "^4.4.2",
-    "verymodel": "^2.3.0"
+    "verymodel": "^3.0.0"
   },
   "devDependencies": {
     "getconfig": "^2.1.0",
