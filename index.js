@@ -9,6 +9,15 @@ let Joi = require('joi');
 
 let default_connection;
 
+function positionBindings(sql) {
+  var questionCount = 0;
+  return sql.replace(/\?/g, function () {
+    questionCount++;
+    return '$' + questionCount;
+  });
+}
+
+
 function Model() {
   verymodel.VeryModel.apply(this, arguments);
   if (!this.options.connection) this.options.connection = default_connection;
@@ -110,7 +119,11 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
 
       //if knex query builder
       if (typeof query === 'object' && query.constructor.name === 'QueryBuilder') {
-        query = query.toString();
+        let knexQuery = query.toSQL();
+        query = {
+          text: positionBindings(knexQuery.sql),
+          values: knexQuery.bindings
+        };
       }
       if (typeof query === 'string') {
         query = {text: query};
