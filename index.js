@@ -164,7 +164,7 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
       let config = prepArgs(args, callback, opts);
       let errors = this.doValidate();
       if (errors.error !== null) {
-        opts.validationError = errors;
+        opts.validationError = errors.error;
       }
       let query = prepQuery(opts.sql, config.args, this, this.__verymeta.model, `inst-${opts.name}`);
       return this.__verymeta.model.runQuery(opts, query, config.callback);
