@@ -1,5 +1,5 @@
 {
   "db": {
-    "uri": "postgres://localhost/testdb"
+    "uri": "postgres://localhost/gatepost_test"
   }
 }

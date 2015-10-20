@@ -35,7 +35,7 @@ function Model() {
 
   this.extendModel({
     getDB: function (callback) {
-      pg.connect(model.options.connection, function (err, db, done) {
+      pg.connect(this.__verymeta.connection, function (err, db, done) {
         callback(err, db, done);
       });
     }

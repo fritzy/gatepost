@@ -19,7 +19,11 @@
     "url": "git://github.com/fritzy/gatepost.git"
   },
   "scripts": {
-    "test": "nodeunit test/index.js"
+    "test": "lab -a code -t 100",
+    "migrate": "knex migrate:latest",
+    "dropdb": "dropdb --if-exists gatepost_test",
+    "createdb": "createdb gatepost_test",
+    "resetdb": "npm run dropdb && npm run createdb && npm run migrate"
   },
   "author": "Nathan Fritz",
   "license": "MIT",
@@ -31,9 +35,10 @@
     "verymodel": "^3.0.0"
   },
   "devDependencies": {
+    "code": "^1.5.0",
     "getconfig": "^2.1.0",
     "knex": "^0.8.6",
-    "nodeunit": "^0.9.1",
+    "lab": "^6.2.0",
     "sql-template-strings": "^1.1.0"
   }
 }
