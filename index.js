@@ -9,14 +9,19 @@ let Joi = require('joi');
 
 let default_connection;
 
+// Position the bindings for the query. The escape sequence for question mark
+// is \? (e.g. knex.raw("\\?") since javascript requires '\' to be escaped too...)
 function positionBindings(sql) {
   var questionCount = 0;
-  return sql.replace(/\?/g, function () {
-    questionCount++;
-    return '$' + questionCount;
+  return sql.replace(/(\\*)(\?)/g, function (match, escapes) {
+    if (escapes.length % 2) {
+      return '?';
+    } else {
+      questionCount++;
+      return '$' + questionCount;
+    }
   });
 }
-
 
 function Model() {
   verymodel.VeryModel.apply(this, arguments);
