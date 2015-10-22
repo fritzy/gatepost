@@ -154,7 +154,11 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
     opts = this.prepOpts(opts);
     this[opts.name] = (args, callback) => {
       let config = prepArgs(args, callback, opts, this);
-      let query = prepQuery(opts.sql, config.args, null, this, opts.name);
+      let query;
+
+      if (!opts.validationError) {
+        query = prepQuery(opts.sql, config.args, null, this, opts.name);
+      }
       return this.runQuery(opts, query, config.callback);
     };
   };
@@ -168,10 +172,14 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
     extension[opts.name] = function (args, callback) {
       let config = prepArgs(args, callback, opts);
       let errors = this.doValidate();
+      let query;
       if (errors.error !== null) {
         opts.validationError = errors.error;
       }
-      let query = prepQuery(opts.sql, config.args, this, this.__verymeta.model, `inst-${opts.name}`);
+
+      if (!opts.validationError) {
+        query = prepQuery(opts.sql, config.args, this, this.__verymeta.model, `inst-${opts.name}`);
+      }
       return this.__verymeta.model.runQuery(opts, query, config.callback);
     };
     this.extendModel(extension);
