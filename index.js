@@ -59,12 +59,6 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
 
   this.runQuery = function (opts, queries, callback) {
     return new Promise((resolve, reject) => {
-      if (opts.validationError) {
-        if (callback) {
-          callback(opts.validationError);
-        }
-        return reject(opts.validationError);
-      }
       this.getDB((err, client, dbDone) => {
         if (err) {
           dbDone();
@@ -154,6 +148,10 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
     opts = this.prepOpts(opts);
     this[opts.name] = (args, callback) => {
       let config = prepArgs(args, callback, opts, this);
+      if (opts.validationError) {
+          if (config.callback) config.callback(opts.validationError);
+          return Promise.reject(opts.validationError);
+      }
       let query = prepQuery(opts.sql, config.args, null, this, opts.name);
       return this.runQuery(opts, query, config.callback);
     };
@@ -170,6 +168,10 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
       let errors = this.doValidate();
       if (errors.error !== null) {
         opts.validationError = errors.error;
+      }
+      if (opts.validationError) {
+          if (config.callback) config.callback(opts.validationError);
+          return Promise.reject(opts.validationError);
       }
       let query = prepQuery(opts.sql, config.args, this, this.__verymeta.model, `inst-${opts.name}`);
       return this.__verymeta.model.runQuery(opts, query, config.callback);
