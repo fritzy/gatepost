@@ -1,6 +1,6 @@
 {
   "name": "gatepost",
-  "version": "6.0.2",
+  "version": "6.0.3",
   "description": "A reverse ORM for Postgres.",
   "keywords": [
     "pg",
