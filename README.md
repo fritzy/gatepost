@@ -1,6 +1,6 @@
 #Gatepost: Bind to Models From SQL
 
-![cow opening gate](https://cldup.com/UdnyhwUfRF.png)
+![picture of fence with gate](https://cldup.com/6MNZCYtzkw.png)
 
 [![npm i gatepost](https://nodei.co/npm/gatepost.png)](https://www.npmjs.com/package/gatepost)
 
