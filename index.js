@@ -97,7 +97,7 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
     args = lodash.defaults(args, opts.defaults || {});
     opts.validateOpts = opts.validateOpts || null;
     if (opts.validate) {
-      let valRes = Joi.validate(args, opts.validate, opts.validateOpts);
+      const valRes = Joi.validate(args, opts.validate, opts.validateOpts);
       if (valRes.error) {
         opts.validationError = valRes.error;
       } else {
@@ -118,7 +118,7 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
 
       //if knex query builder
       if (typeof query === 'object' && query.constructor.name === 'QueryBuilder') {
-        let knexQuery = query.toSQL();
+        const knexQuery = query.toSQL();
         query = {
           text: positionBindings(knexQuery.sql),
           values: knexQuery.bindings
@@ -147,12 +147,12 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
     }
     opts = this.prepOpts(opts);
     this[opts.name] = (args, callback) => {
-      let config = prepArgs(args, callback, opts, this);
+      const config = prepArgs(args, callback, opts, this);
       if (opts.validationError) {
           if (config.callback) config.callback(opts.validationError);
           return Promise.reject(opts.validationError);
       }
-      let query = prepQuery(opts.sql, config.args, null, this, opts.name);
+      const query = prepQuery(opts.sql, config.args, null, this, opts.name);
       return this.runQuery(opts, query, config.callback);
     };
   };
@@ -161,11 +161,11 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
     if (typeof this.controllers[opts.name] !== 'undefined') {
       throw new Error(`Instances of Gatepost Model "${this.options.name}" already have a property named "${opts.name}"`);
     }
-    let extension = {};
+    const extension = {};
     opts = this.prepOpts(opts);
     extension[opts.name] = function (args, callback) {
-      let config = prepArgs(args, callback, opts);
-      let errors = this.doValidate();
+      const config = prepArgs(args, callback, opts);
+      const errors = this.doValidate();
       if (errors.error !== null) {
         opts.validationError = errors.error;
       }
@@ -173,7 +173,7 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
           if (config.callback) config.callback(opts.validationError);
           return Promise.reject(opts.validationError);
       }
-      let query = prepQuery(opts.sql, config.args, this, this.__verymeta.model, `inst-${opts.name}`);
+      const query = prepQuery(opts.sql, config.args, this, this.__verymeta.model, `inst-${opts.name}`);
       return this.__verymeta.model.runQuery(opts, query, config.callback);
     };
     this.extendModel(extension);
