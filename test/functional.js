@@ -190,8 +190,7 @@ describe('Add and remove', () => {
 
   it('does not error on valid query arguments', (done) => {
     Author.queryWithValidate({ name: 'Nathan' }, (err) => {
-      expect(err).to.not.be.null();
-      expect(err.name).to.equal('ValidationError');
+      expect(err).to.be.null();
       done();
     });
   });
