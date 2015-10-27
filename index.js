@@ -93,15 +93,6 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
     callback = typeof args === 'function' ? args : callback;
     args = typeof args === 'object' ? args : {};
     args = lodash.defaults(args, opts.defaults || {});
-    //opts.validateOpts = opts.validateOpts || null;
-    //if (opts.validate) {
-    //  const valRes = Joi.validate(args, opts.validate, opts.validateOpts || null);
-    //  if (valRes.error) {
-    //    opts.validationError = valRes.error;
-    //  } else {
-    //    args = valRes.value;
-    //  }
-    //}
     return {callback, args};
   }
 
