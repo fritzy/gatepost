@@ -20,10 +20,9 @@
   },
   "scripts": {
     "test": "lab -a code -t 100",
-    "migrate": "knex migrate:latest",
     "dropdb": "dropdb --if-exists gatepost_test",
     "createdb": "createdb gatepost_test",
-    "resetdb": "npm run dropdb && npm run createdb && npm run migrate"
+    "resetdb": "npm run dropdb && npm run createdb"
   },
   "author": "Nathan Fritz",
   "license": "MIT",

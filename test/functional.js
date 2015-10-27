@@ -78,7 +78,7 @@ Author.fromSQL({
 
 Author.fromSQL({
   name: 'queryWithValidate',
-  sql: (args, model) => SQL`SELECT * FROM authors_tmp WHERE name="${args.name}"`,
+  sql: (args, model) => SQL`SELECT * FROM authors_tmp WHERE name=${args.name}`,
   validate: {
     name: Joi.string()
   }
