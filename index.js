@@ -35,7 +35,7 @@ function Model() {
 
   this.extendModel({
     getDB: function (callback) {
-      pg.connect(model.options.connection, function (err, db, done) {
+      pg.connect(this.__verymeta.connection, function (err, db, done) {
         callback(err, db, done);
       });
     }
@@ -57,12 +57,11 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
     return this.registerFactorySQL(ropts);
   }
 
-  this.runQuery = function (opts, queries, callback) {
+  this.runQuery = function (opts, queries) {
     return new Promise((resolve, reject) => {
       this.getDB((err, client, dbDone) => {
         if (err) {
           dbDone();
-          if (callback) callback(err);
           return reject(err);
         }
         async.reduce(queries, [], (rows, query, nextCB) => {
@@ -84,7 +83,6 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
             }
           }
           dbDone();
-          if (callback) callback(err, rows);
           return err ? reject(err) : resolve(rows);
         });
       });
@@ -95,16 +93,20 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
     callback = typeof args === 'function' ? args : callback;
     args = typeof args === 'object' ? args : {};
     args = lodash.defaults(args, opts.defaults || {});
-    opts.validateOpts = opts.validateOpts || null;
-    if (opts.validate) {
-      const valRes = Joi.validate(args, opts.validate, opts.validateOpts);
-      if (valRes.error) {
-        opts.validationError = valRes.error;
-      } else {
-        args = valRes.value;
-      }
-    }
     return {callback, args};
+  }
+
+  function validateArgs(args, opts) {
+    if (opts.validate) {
+      const valRes = Joi.validate(args, opts.validate, opts.validateOpts)
+      if (valRes.error) {
+        return Promise.reject(valRes.error);
+      } else {
+        return Promise.resolve(valRes.value);
+      }
+    } else {
+      return Promise.resolve(args);
+    }
   }
 
   function prepQuery(func, args, inst, model, name) {
@@ -146,14 +148,26 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
       throw new Error(`Gatepost Model "${this.options.name}" already has a property named "${opts.name}"`);
     }
     opts = this.prepOpts(opts);
-    this[opts.name] = (args, callback) => {
-      const config = prepArgs(args, callback, opts, this);
-      if (opts.validationError) {
-          if (config.callback) config.callback(opts.validationError);
-          return Promise.reject(opts.validationError);
-      }
-      const query = prepQuery(opts.sql, config.args, null, this, opts.name);
-      return this.runQuery(opts, query, config.callback);
+    this[opts.name] = (_args, _callback) => {
+      const config = prepArgs(_args, _callback, opts);
+      const callback = config.callback;
+      const args = config.args;
+
+      return validateArgs(args, opts)
+              .then((queryArgs) => prepQuery(opts.sql, queryArgs, null, this, opts.name))
+              .then((query) => this.runQuery(opts, query))
+              .catch((err) => {
+                if (callback) {
+                  callback(err);
+                }
+                throw err;
+              })
+              .then((result) => {
+                if (callback) {
+                  callback(null, result);
+                }
+                return result;
+              })
     };
   };
 
@@ -163,18 +177,33 @@ Model.prototype = Object.create(verymodel.VeryModel.prototype);
     }
     const extension = {};
     opts = this.prepOpts(opts);
-    extension[opts.name] = function (args, callback) {
-      const config = prepArgs(args, callback, opts);
-      const errors = this.doValidate();
-      if (errors.error !== null) {
-        opts.validationError = errors.error;
-      }
-      if (opts.validationError) {
-          if (config.callback) config.callback(opts.validationError);
-          return Promise.reject(opts.validationError);
-      }
-      const query = prepQuery(opts.sql, config.args, this, this.__verymeta.model, `inst-${opts.name}`);
-      return this.__verymeta.model.runQuery(opts, query, config.callback);
+    extension[opts.name] = function (_args, _callback) {
+      const config = prepArgs(_args, _callback, opts);
+      const callback = config.callback;
+      const args = config.args;
+
+      return validateArgs(args, opts)
+              .then((queryArgs) => {
+                const errors = this.doValidate();
+                if (errors.error !== null) {
+                  throw errors.error;
+                }
+                return queryArgs;
+              })
+              .then((queryArgs) => prepQuery(opts.sql, queryArgs, this, this.__verymeta.model, `inst-${opts.name}`))
+              .then((query) => this.__verymeta.model.runQuery(opts, query))
+              .catch((err) => {
+                if (callback) {
+                  callback(err);
+                }
+                throw err;
+              })
+              .then((result) => {
+                if (callback) {
+                  callback(null, result);
+                }
+                return result;
+              })
     };
     this.extendModel(extension);
   };
