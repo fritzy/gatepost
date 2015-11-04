@@ -14,62 +14,45 @@ Feel free to use knex, template strings, or other methods for generating your SQ
 ```javascript
 "use strict";
 
-let gatepost = require('gatepost');
-let joi = require('joi');
-let SQL = require('sql-template-strings');
 let knex = require('knex')({dialect: 'pg'});
 
-gatepost.setConnection('postgres://fritzy@localhost/fritzy');
-
-let Book = new gatepost.Model({
-  id: {validate: joi.number().integer()},
-  title: {validate: joi.string().max(100).min(4)},
-  author: {validate: joi.number().integer()}
-}, {
-  name: 'book',
-  cache: true
+//knex query builders are dealt with automatically
+Book.fromSQL({
+  name: 'getByCategory',
+  sql: (args) => knex.select('id', 'title', 'author')
+  .from('books').where({category: args.category})
 });
 
-let Author = new gatepost.Model({
-  id: {validator: joi.number().integer()},  
-  name: {validator: joi.string()},
-  books: {collection: Book}
-}, {
-  name: 'author',
-  cache: true
+//using callbacks
+Book.getByCategory({category: 'cheese'}), function (err, results) {
+  if (!err) results.forEach((book) => console.log(book.toJSON());
 });
+```
 
-//using json_agg to cast sub-collection values
-Author.fromSQL({
-  name: "all",
-  sql: `SELECT id, name,
-(
-   SELECT
-   json_agg(row_to_json(book_rows))
-   FROM (select id, title from books2 WHERE books2.author_id=authors2.id) book_rows
- )
- AS books
- FROM authors2`
-});
+```javascript
+"use strict"
 
-//passing arguments or using the model instance for setting literals
-Author.fromSQL({
-  name: 'update',
+let SQL = require('sql-template-strings');
+
+//sql-template-strings template tag returns a {text, values} object
+//which gets turned into a prepare statement by gatepost
+Book.fromSQL({
+  name: 'insert',
+  //using a template string
+  sql: (args, model) => SQL`INSERT INTO books
+(title, author, category)
+VALUES (${model.title}, ${model.author}, ${model.category})
+RETURNING id`,
   instance: true,
-  oneResult: true,
-  sql: (args, model) => SQL`UPDATE books2 SET title=${model.title} WHERE id=${model.id}`
+  oneResult: true
 });
 
-//use promises or callbacks
-Author.all()
-.then(function (result) {
-  console.log(authors[0].toJSON());
-  authors[0].books[0].title = 'Happy Fun Times: The End';
-  return authors[0].books[0].update();
-})
-.catch(function (err) {
-  console.log(`Postgres Error: ${err}`);
-});
+let book = Book.create({title: 'Ham and You', author: 'Nathan Fritz', category: 'ham'});
+
+//using promises
+book.insert()
+.then((result) => console.log(`Book ID: ${book.id}`))
+.catch((error) => console.log(`Gadzoons and error! ${error}`));
 ```
 
 ```javascript
