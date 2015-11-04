@@ -55,13 +55,6 @@ book.insert()
 .catch((error) => console.log(`Gadzoons and error! ${error}`));
 ```
 
-```javascript
-{ name: 'Nathan Fritz',
-  books:
-  [ { title: 'Happy Fun Times' },
-  { title: 'Derpin with the Stars' } ] }
-```
-
 # Model extensions
 
 See [VeryModel documentation](https://github.com/fritzy/verymodel) for information on using `gatepost.Model`s.
