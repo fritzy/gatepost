@@ -96,6 +96,13 @@ Author.fromSQL({
 })
 
 
+Author.fromSQL({
+  name: 'getJSON',
+  sql: (args, model) => SQL`SELECT ('{"name": "Bill"}')::JSON as name WHERE 1=2`,
+  oneResult: true
+});
+
+
 describe('Add and remove', () => {
 
   before((done) => {
@@ -191,6 +198,13 @@ describe('Add and remove', () => {
   it('does not error on valid query arguments', (done) => {
     Author.queryWithValidate({ name: 'Nathan' }, (err) => {
       expect(err).to.be.null();
+      done();
+    });
+  });
+
+  it('does not get a model back when where fails', (done) => {
+    Author.getJSON({}, (err, model) => {
+      expect(model).to.be.null();
       done();
     });
   });
