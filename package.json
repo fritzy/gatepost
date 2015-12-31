@@ -28,16 +28,16 @@
   "license": "MIT",
   "dependencies": {
     "async": "^1.4.2",
-    "joi": "^7.0.1",
+    "joi": "^7.1.0",
     "lodash": "^3.10.1",
     "pg": "^4.4.2",
-    "verymodel": "^3.1.0"
+    "verymodel": "^3.5.0"
   },
   "devDependencies": {
-    "code": "^2.0.1",
+    "code": "^2.1.0",
     "getconfig": "^2.1.0",
     "knex": "^0.9.0",
-    "lab": "^7.3.0",
+    "lab": "^8.0.1",
     "sql-template-strings": "^1.1.0"
   }
 }
