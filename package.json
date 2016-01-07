@@ -30,7 +30,7 @@
     "async": "^1.4.2",
     "joi": "^7.1.0",
     "lodash": "^3.10.1",
-    "pg": "^4.4.2",
+    "pg-promise": "^2.8.5",
     "verymodel": "^3.5.0"
   },
   "devDependencies": {
