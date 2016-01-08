@@ -9,12 +9,24 @@ With most ORMs have you model the database schema, but with Gatepost, you're not
 
 Gatepost uses [VeryModel](https://github.com/fritzy/verymodel) for Model factories and instances, giving you a lot of flexibility such as sharing your validation between your API and database, auto-converting values, etc.
 
-Feel free to use knex, template strings, or other methods for generating your SQL. Use callbacks or promises. Gatepost is designed to stay out of your way.
+Feel free to use knex, template strings, or other methods for generating your SQL. Gatepost is designed to stay out of your way.
 
 ```javascript
-"use strict";
+'use strict';
 
-let knex = require('knex')({dialect: 'pg'});
+const Gatepost = require('gatepost')('postgres://localhost/gatepost_test');
+
+const Book = new Gatepost.Model({
+  title: {
+    validate: Joi.string()
+  },
+  id: {}
+}, {
+  cache: true,
+  name: 'Book'
+});
+
+const knex = require('knex')({dialect: 'pg'});
 
 //knex query builders are dealt with automatically
 Book.fromSQL({
@@ -23,9 +35,10 @@ Book.fromSQL({
   .from('books').where({category: args.category})
 });
 
-//using callbacks
-Book.getByCategory({category: 'cheese'}), function (err, results) {
-  if (!err) results.forEach((book) => console.log(book.toJSON());
+Book.getByCategory({category: 'cheese'}).then(results) {
+  results.forEach((book) => console.log(book.toJSON());
+}).catch((err) => {
+  console.log("error!!!!");
 });
 ```
 
@@ -78,7 +91,7 @@ Generate a Factory or Instance method from SQL for your Model
 
  * `name`: [string] method name
  * `sql`: [function] returns the query object or string for pg.query or array of these.
- * `oneResult`: [boolean] only get one model intance or null rather than array
+ * `oneResult`: [boolean] only get one model intance or rejects with new gatepost.EmptyResult
  * `instance`: [boolean] Add the method to model instances rather than the factory.
  * `model`: [Model or string] cast the results into this model
  * `validate`: [Joi Schema] validate the args with this [Joi Schema](https://npmjs.org/package/joi)
@@ -87,23 +100,16 @@ Generate a Factory or Instance method from SQL for your Model
 
 #### Generated Method
 
-`function (args, callback);`
+`function (args);`
 
  * `args`: [object unless oneArg set] optional, the first argument passed to the `sql` function
- * `callback`: [function] optional
 
+returns `Promise`
 
-#### Callback Function
-
-`function (postgresError, results);`
-
-The results are an array of model instances, or a single model if `oneResult` was set to true (null if no results).
 
 #### Returned Promise
 
-Calling a method generated from `fromSQL` returns a [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) which will `then` with the `results` (same as callback results) or `catch` with a Postgres error from [pg](https://npmjs.org/package/pg).
-
-Either use the returned promise or set a callback. I doubt there's a use case for using both.
+Calling a method generated from `fromSQL` returns a [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) which will `then` with the `results`, `catch` with a Postgres error from [pg](https://npmjs.org/package/pg) or gatepost.EmptyResult.
 
 #### SQL Function
 
@@ -122,9 +128,10 @@ Book.fromSQL({
   .from('books').where({category: args.category})
 });
 
-//using callbacks
-Book.getByCategory({category: 'cheese'}), function (err, results) {
-  if (!err) results.forEach((book) => console.log(book.toJSON());
+Book.getByCategory({category: 'cheese'}).then(results) {
+  results.forEach((book) => console.log(book.toJSON());
+}).catch((err) => {
+  //...
 });
 ```
 
