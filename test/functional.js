@@ -2,24 +2,21 @@
 
 const Config = require('getconfig');
 
-let lab = exports.lab = require('lab').script();
-let expect = require('code').expect;
-let describe = lab.describe;
-let it = lab.test;
-let before = lab.before;
-let after = lab.after;
+const lab = exports.lab = require('lab').script();
+const expect = require('code').expect;
+const describe = lab.describe;
+const it = lab.test;
+const before = lab.before;
+const after = lab.after;
 
-let Gatepost = require('../index');
-let pg = require('pg');
-let SQL = require('sql-template-strings');
-let Joi = require('joi');
-let knex = require('knex')({ client: 'pg', connection: Config.db.uri });
+const Gatepost = require('../index')(Config.db.uri);
+const pg = require('pg');
+const SQL = require('sql-template-strings');
+const Joi = require('joi');
+const knex = require('knex')({ client: 'pg', connection: Config.db.uri });
+const utils = require('../lib/utils');
 
-Gatepost.setConnection(Config.db.uri);
-
-let dbDone, db;
-
-let Author = new Gatepost.Model({
+const Author = new Gatepost.Model({
   name: {
     validate: Joi.string()
   },
@@ -29,7 +26,7 @@ let Author = new Gatepost.Model({
   name: 'Author'
 });
 
-let Book = new Gatepost.Model({
+const Book = new Gatepost.Model({
   title: {
     validate: Joi.string()
   },
@@ -66,7 +63,15 @@ Author.fromSQL({
   name: 'addAuthor',
   sql: (args, model) => SQL`INSERT INTO authors_tmp (name) VALUES (${model.name}) RETURNING id, name`,
   instance: true,
-  oneResult: true
+  oneResult: true,
+  model: Author
+});
+
+Author.fromSQL({
+  name: 'emptyResult',
+  sql: (args, model) => SQL`SELECT * from authors_tmp WHERE 1=2`,
+  required: true,
+  model: 'Author'
 });
 
 Author.fromSQL({
@@ -90,11 +95,10 @@ Author.fromSQL({
     return [
       SQL`SELECT * FROM authors_tmp WHERE id=1`,
       SQL`SELECT * FROM authors_tmp WHERE id=2`,
-      SQL`SELECT * FROM authors_tmp WHERE id=1`,
+      SQL`SELECT * FROM authors_tmp WHERE id=1`
     ];
   }
-})
-
+});
 
 Author.fromSQL({
   name: 'getJSON',
@@ -112,49 +116,40 @@ describe('Add and remove', () => {
     }).then(() => {
 
       done();
-    }).catch((err) => console.log(err));
+    }).catch(done);
   });
 
   after((done) => {
 
-    Book.dropBook()
-      .then(Author.dropAuthor)
-      .then(() => {
-
-        pg.end();
-        done();
-      })
-      .catch((err) => console.log(err));
+    pg.end();
+    done();
   });
 
   it('instance: create row', (done) => {
 
-    let author = Author.create({name: 'Nathan Fritz'});
+    const author = Author.create({ name: 'Nathan Fritz' });
     author.addAuthor().then((a2) => {
 
       expect(a2.id).to.equal(1);
       expect(a2.name).to.equal('Nathan Fritz');
       done();
-    }).catch((err) => {
-
-      throw err;
-    });
+    }).catch(done);
   });
 
   it('instance: create row knex', (done) => {
 
-    let author = Author.create({name: "Nathan 'z"});
+    const author = Author.create({ name: 'Nathan \'z' });
     author.addAuthorKnex().then((a2) => {
 
       expect(a2.id).to.equal(2);
-      expect(a2.name).to.equal("Nathan 'z");
+      expect(a2.name).to.equal('Nathan \'z');
       done();
     }).catch(done);
   });
 
   it('instance: create row fail', (done) => {
 
-    let author = Author.create({name: 34});
+    const author = Author.create({ name: 34 });
     author.addAuthor().then(done).catch((err) => {
 
       expect(err).to.exist();
@@ -164,24 +159,57 @@ describe('Add and remove', () => {
 
   it('model: getDB', (done) => {
 
-    let db = Author.getDB();
-    // expect(db.connectionParameters.database).to.equal('gatepost_test');
+    const db = Author.getDB();
+    expect(db.constructor.name).to.equal('Database');
     done();
   });
 
   it('instance: getDB', (done) => {
 
-    let author = Author.create({ name: 'Nathan Fritz' });
-    let db = author.getDB();
-    // expect(db.connectionParameters.database).to.equal('gatepost_test');
+    const author = Author.create({ name: 'Nathan Fritz' });
+    const db = author.getDB();
+    expect(db.constructor.name).to.equal('Database');
     done();
-  })
+  });
 
   it('throws error on invalid query arguments', (done) => {
     Author.queryWithValidate({ name: 123 }).then(done).catch((err) => {
 
       expect(err).to.not.be.null();
       expect(err.name).to.equal('ValidationError');
+      done();
+    });
+  });
+
+  it('add a duplicate method', (done) => {
+    expect(() => {
+      Author.fromSQL({
+        name: 'getJSON',
+        sql: (args, model) => SQL`SELECT ('{"name": "Bill"}')::JSON as name WHERE 1=2`,
+        oneResult: true
+      });
+    }).to.throw();
+    done();
+  });
+
+  it('add a duplicate instance method', (done) => {
+    expect(() => {
+      Author.fromSQL({
+        name: 'addAuthorKnex',
+        sql: (args, model) => knex('authors_tmp').insert({ name: model.name }).returning(['id', 'name']),
+        instance: true,
+        oneResult: true
+      });
+    }).to.throw();
+    done();
+  });
+
+  it('throws error on invalid query arguments', (done) => {
+    Author.emptyResult().then(() => {
+      done(new Error('Should have had error'));
+    }).catch((err) => {
+      expect(err).to.not.be.null();
+      expect(err.name).to.equal('EmptyResult');
       done();
     });
   });
@@ -195,10 +223,18 @@ describe('Add and remove', () => {
 
   it('does not get a model back when where fails', (done) => {
     Author.getJSON({}).then((model) => {
-
-      expect(model).to.be.null();
+      done(new Error('Should have had error'));
+    }).catch((err) => {
+      expect(err).to.not.be.null();
+      expect(err.name).to.equal('EmptyResult');
       done();
-    }).catch(done);
+    });
+  });
+
+  it('position bindings escaped question-mark', (done) => {
+    const sql = utils.positionBindings('SELECT \\?');
+    expect(sql).to.equal('SELECT ?');
+    done();
   });
 
   it('multi queries are concatenated', (done) => {

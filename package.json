@@ -19,7 +19,7 @@
     "url": "git://github.com/fritzy/gatepost.git"
   },
   "scripts": {
-    "test": "lab -a code -t 85",
+    "test": "lab -a code -c && echo \"Linting...\" && eslint . && echo done",
     "dropdb": "dropdb --if-exists gatepost_test",
     "createdb": "createdb gatepost_test",
     "resetdb": "npm run dropdb && npm run createdb"
@@ -30,11 +30,13 @@
     "async": "^1.4.2",
     "joi": "^7.1.0",
     "lodash": "^3.10.1",
+    "lodash.assign": "^3.2.0",
     "pg-promise": "^2.8.5",
     "verymodel": "^3.5.0"
   },
   "devDependencies": {
     "code": "^2.1.0",
+    "eslint": "^1.10.3",
     "getconfig": "^2.1.0",
     "knex": "^0.9.0",
     "lab": "^8.0.1",
