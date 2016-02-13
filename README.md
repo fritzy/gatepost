@@ -15,6 +15,7 @@ Feel free to use knex, template strings, or other methods for generating your SQ
 'use strict';
 
 const Gatepost = require('gatepost')('postgres://localhost/gatepost_test');
+const SQL = require('sql-template-string'); //propery breaks out SQL template strings into a separate array to prevent SQL injection and errors
 
 const Book = new Gatepost.Model({
   title: {
@@ -46,9 +47,9 @@ Book.getByCategory({category: 'cheese'}).then(results) {
 "use strict"
 
 let SQL = require('sql-template-strings');
-
 //sql-template-strings template tag returns a {text, values} object
 //which gets turned into a prepare statement by gatepost
+
 Book.fromSQL({
   name: 'insert',
   //using a template string

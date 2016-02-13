@@ -32,7 +32,7 @@
     "lodash": "^3.10.1",
     "lodash.assign": "^3.2.0",
     "pg-promise": "^2.8.5",
-    "verymodel": "^3.5.0"
+    "verymodel": "^3.5.1"
   },
   "devDependencies": {
     "code": "^2.1.0",
